@@ -1,29 +1,31 @@
 const Role = require("../models/Role");
-
-const checkPermission = (moduleName, action) => {
-  return async (req, res, next) => {
+module.exports = (moduleName, action) => {
+  return (req, res, next) => {
     try {
-      const Role = require("../models/Role"); 
-      const role = await Role.findById(req.admin.role).populate("permissions");
+      console.log("🔐 CHECK PERMISSION");
 
-      if (!role) return res.status(403).json({ message: "Role not found" });
+      const permissions = req.user?.role?.permissions || [];
+      console.log("Permissions:", permissions);
 
-      // ✅ ADD THIS BYPASS:
-      if (role.name === "SUPER_ADMIN") {
-        return next(); 
+      const hasPermission = permissions.some((p) => {
+        return (
+          p.module === moduleName &&
+          p.actions &&
+          p.actions[action] === true // 🔥 FIX HERE
+        );
+      });
+
+      if (!hasPermission) {
+        console.log("❌ Permission denied");
+        return res.status(403).json({ message: "Access denied" });
       }
 
-      const hasPermission = role.permissions.some(
-        (perm) => perm.module === moduleName && perm.actions[action] === true
-      );
-
-      if (!hasPermission) return res.status(403).json({ message: "Access Denied" });
-
+      console.log("✅ Permission granted");
       next();
+
     } catch (err) {
+      console.log("❌ PERMISSION ERROR:", err.message);
       res.status(500).json({ message: err.message });
     }
   };
 };
-
-module.exports = checkPermission;

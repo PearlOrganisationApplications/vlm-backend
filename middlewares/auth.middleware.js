@@ -1,28 +1,42 @@
+// middlewares/auth.middleware.js
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
+const User = require("../models/User");
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.headers.authorization?.split(" ")[1];
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    const token = authHeader.split(" ")[1];
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const admin = await Admin.findById(decoded.id);
+    let user;
 
-    if (!admin) {
-      return res.status(401).json({ message: "Admin not found" });
+    // 🔥 strict separation
+    if (decoded.type === "ADMIN") {
+      user = await Admin.findById(decoded.id).populate({
+        path: "role",
+        populate: { path: "permissions" },
+      });
+    } else if (decoded.type === "USER") {
+      user = await User.findById(decoded.id);
+    } else {
+      return res.status(401).json({ message: "Invalid token type" });
     }
 
-    req.admin = admin;
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    req.user = user;
+    req.role = decoded.type;
 
     next();
   } catch (error) {
+    console.log(error.message);
     res.status(401).json({ message: "Invalid token" });
   }
 };

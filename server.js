@@ -8,6 +8,8 @@ const morgan = require("morgan");
 const connectDB = require("./config/db");
 const adminRoutes = require("./routes/admin.routes");
 const permissionRoutes = require("./routes/permission.routes");
+const paymentRoutes = require("./routes/payment.routes");
+const studentRoutes = require("./routes/student.routes"); 
 
 const app = express();
 
@@ -18,6 +20,7 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
+
 // routes
 app.get("/", (req, res) => {
   res.send("API is running...");
@@ -25,6 +28,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/admins", adminRoutes);
 app.use("/api/permissions", permissionRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/students", studentRoutes); // Add this line to include student routes
 
 // global error handler (optional)
 app.use((err, req, res, next) => {

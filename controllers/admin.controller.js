@@ -9,28 +9,60 @@ const jwt = require("jsonwebtoken");
 
 
 // CREATE ADMIN (for Postman)
+// controllers/admin.controller.js
+
 exports.createAdmin = async (req, res) => {
   try {
+    console.log("==== CREATE ADMIN START ====");
+
+    console.log("REQ USER:", req.user); // 🔥 important
+    console.log("REQ BODY:", req.body);
+
     const { name, email, password, role } = req.body;
 
     const existing = await Admin.findOne({ email });
+    console.log("Existing Admin:", existing);
+
     if (existing) {
       return res.status(400).json({ message: "Admin already exists" });
+    }
+
+    // ✅ Validate role
+    const roleData = await Role.findById(role);
+    console.log("Role Data:", roleData);
+
+    if (!roleData) {
+      console.log("❌ Role not found");
+      return res.status(400).json({ message: "Invalid role ID" });
     }
 
     const admin = await Admin.create({
       name,
       email,
       password,
-      role
+      role,
     });
+
+    console.log("Created Admin:", admin);
+
+    const populatedAdmin = await Admin.findById(admin._id)
+      .populate({
+        path: "role",
+        populate: { path: "permissions" },
+      })
+      .select("-password");
+
+    console.log("Populated Admin:", populatedAdmin);
+
+    console.log("==== CREATE ADMIN END ====");
 
     res.status(201).json({
       message: "Admin created successfully",
-      admin
+      admin: populatedAdmin,
     });
 
   } catch (error) {
+    console.log("❌ CREATE ADMIN ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -44,9 +76,10 @@ exports.getAdmins = async (req, res) => {
       .populate({
         path: "role",
         populate: {
-          path: "permissions"
-        }
-      });
+          path: "permissions",
+        },
+      })
+      .select("-password"); // ✅ hide password
 
     res.json(admins);
   } catch (err) {
@@ -116,11 +149,18 @@ exports.loginAdmin = async (req, res) => {
     return res.status(400).json({ message: "Invalid credentials" });
   }
 
-  const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET);
+  const token = jwt.sign(
+    {
+      id: admin._id,
+      type: "ADMIN", // ✅ FIX
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
   res.json({
     token,
     admin,
-    permissions: admin.role.permissions, // send for sidebar
+    permissions: admin.role.permissions,
   });
 };
