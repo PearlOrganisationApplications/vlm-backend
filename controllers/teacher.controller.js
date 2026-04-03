@@ -2,6 +2,8 @@ const Teacher = require("../models/Teacher");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const path = require("path");
 
 exports.registerTeacher = async (req, res) => {
   try {
@@ -251,6 +253,64 @@ exports.updateTeacher = async (req, res) => {
     res.json({
       message: "Teacher updated successfully",
       updatedTeacher
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
+exports.deleteTeacher = async (req, res) => {
+  try {
+    const teacherId = req.params.id;
+
+    // 🔍 Find teacher
+    const teacher = await Teacher.findById(teacherId);
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    // 🗑️ DELETE FILES (optional but recommended)
+    const deleteFile = (fileUrl) => {
+      if (!fileUrl) return;
+
+      const filePath = path.join(
+        __dirname,
+        "..",
+        "uploads",
+        fileUrl.split("/uploads/")[1]
+      );
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    };
+
+    // Delete profile pic
+    deleteFile(teacher.BasicDetails?.profilePic);
+
+    // Delete certifications
+    teacher.QualificationDetails?.certifications?.forEach(deleteFile);
+
+    // Delete resume
+    deleteFile(teacher.ExperienceDetails?.resume);
+
+    // Delete documents
+    deleteFile(teacher.ExperienceDetails?.documents?.aadharCard);
+    deleteFile(teacher.ExperienceDetails?.documents?.experienceDoc);
+    deleteFile(teacher.ExperienceDetails?.documents?.qualificationCert);
+
+    // 🗑️ Delete user
+    await User.findByIdAndDelete(teacher.userId);
+
+    // 🗑️ Delete teacher
+    await Teacher.findByIdAndDelete(teacherId);
+
+    res.json({
+      message: "Teacher and associated data deleted successfully"
     });
 
   } catch (err) {
