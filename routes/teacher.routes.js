@@ -16,6 +16,8 @@ router.post(
   teacherController.registerTeacher
 );
 
+router.post("/login", teacherController.loginTeacher);
+
 router.get("/:id", teacherController.getTeacherById);
 
 // 📋 GET ALL
