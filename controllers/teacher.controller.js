@@ -37,7 +37,7 @@ exports.registerTeacher = async (req, res) => {
       email: BasicDetails.email,
       phone: BasicDetails.mobile,
       password: hashedPassword,
-      role: "teacher"
+      role: "TEACHER"
     });
 
     // 📂 FILES SAFE ACCESS
