@@ -170,3 +170,90 @@ exports.getAllTeachers = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.updateTeacher = async (req, res) => {
+  try {
+    const BASE_URL = process.env.BASE_URL;
+
+    const teacherId = req.params.id;
+
+    let updateData = {};
+
+    // 📦 Handle JSON (raw)
+    if (req.is("application/json")) {
+      updateData = req.body;
+    }
+
+    // 📦 Handle form-data
+    else {
+      const files = req.files || {};
+
+      let BasicDetails = req.body.BasicDetails
+        ? JSON.parse(req.body.BasicDetails)
+        : {};
+
+      let QualificationDetails = req.body.QualificationDetails
+        ? JSON.parse(req.body.QualificationDetails)
+        : {};
+
+      let ExperienceDetails = req.body.ExperienceDetails
+        ? JSON.parse(req.body.ExperienceDetails)
+        : {};
+
+      const getFileUrl = (file) =>
+        file && file.length > 0
+          ? `${BASE_URL}/uploads/${file[0].filename}`
+          : null;
+
+      updateData = {
+        BasicDetails: {
+          ...BasicDetails,
+          ...(files.profilePic && {
+            profilePic: getFileUrl(files.profilePic)
+          })
+        },
+
+        QualificationDetails: {
+          ...QualificationDetails,
+          ...(files.certifications && {
+            certifications: files.certifications.map(
+              (f) => `${BASE_URL}/uploads/${f.filename}`
+            )
+          })
+        },
+
+        ExperienceDetails: {
+          ...ExperienceDetails,
+          ...(files.resume && {
+            resume: getFileUrl(files.resume)
+          }),
+          documents: {
+            ...(files.aadharCard && {
+              aadharCard: getFileUrl(files.aadharCard)
+            }),
+            ...(files.experienceDoc && {
+              experienceDoc: getFileUrl(files.experienceDoc)
+            }),
+            ...(files.qualificationCert && {
+              qualificationCert: getFileUrl(files.qualificationCert)
+            })
+          }
+        }
+      };
+    }
+
+    const updatedTeacher = await Teacher.findByIdAndUpdate(
+      teacherId,
+      updateData,
+      { new: true }
+    );
+
+    res.json({
+      message: "Teacher updated successfully",
+      updatedTeacher
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
