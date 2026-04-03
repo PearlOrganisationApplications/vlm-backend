@@ -11,7 +11,6 @@ const authMiddleware = require("../middlewares/auth.middleware");
  */
 router.post(
   "/order",
-  authMiddleware,
   paymentController.createOrder
 );
 

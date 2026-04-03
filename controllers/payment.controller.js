@@ -59,13 +59,19 @@ exports.verifyPayment = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
   try {
+    const { userId } = req.body; // or req.params
+
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
     const options = {
       amount: 100, // ₹1 = 100 paise
       currency: "INR",
       receipt: "receipt_" + Date.now(),
-       notes: {
-    userId: req.user._id.toString()
-  }
+      notes: {
+        userId: userId
+      }
     };
 
     const order = await razorpay.orders.create(options);
