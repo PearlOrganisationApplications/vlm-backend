@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const path = require("path");
 
 // optional DB import
 const connectDB = require("./config/db");
@@ -13,7 +14,7 @@ const studentRoutes = require("./routes/student.routes");
 const teacherRoutes = require("./routes/teacher.routes");
 
 const app = express();
-
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 connectDB();
 
 // middlewares
