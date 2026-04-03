@@ -16,28 +16,28 @@ console.log("checkPerm:", typeof checkPermission);
 // CREATE
 router.post(
   "/create",
-  checkPermission("permission", "create"),
+  // checkPermission("permission", "create"),
   controller.createPermission
 );
 
 // GET ALL
 router.get(
   "/",
-checkPermission("admin", "read"),
+// checkPermission("admin", "read"),
   controller.getPermissions
 );
 
 // GET SINGLE
 router.get(
   "/:id",
-  checkPermission("permission", "read"),
+  // checkPermission("permission", "read"),
   controller.getPermission
 );
 
 // UPDATE
 router.put(
   "/:id",
-  checkPermission("permission", "update"),
+  // checkPermission("permission", "update"),
   controller.updatePermission
 );
 
@@ -47,7 +47,7 @@ router.put("/:roleId/permissions/:permissionId", authMiddleware, controller.upda
 // DELETE
 router.delete(
   "/:id",
-  checkPermission("permission", "delete"),
+  // checkPermission("permission", "delete"),
   controller.deletePermission
 );
 
