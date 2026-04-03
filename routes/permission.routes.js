@@ -23,7 +23,7 @@ router.post(
 // GET ALL
 router.get(
   "/",
-  checkPermission("permission", "read"),
+checkPermission("admin", "read"),
   controller.getPermissions
 );
 
