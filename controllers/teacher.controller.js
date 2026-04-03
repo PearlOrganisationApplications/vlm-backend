@@ -1,4 +1,5 @@
 const Teacher = require("../models/Teacher");
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 
@@ -92,3 +93,80 @@ exports.registerTeacher = async (req, res) => {
 
 
 
+
+exports.loginTeacher = async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+
+    // 🔍 Find user
+    const user = await User.findOne({ phone, role: "teacher" });
+
+    if (!user) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    // 🔐 Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // 🎫 Token
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 👤 Get teacher profile
+    const teacher = await Teacher.findOne({ userId: user._id });
+
+    res.json({
+      message: "Login successful",
+      token,
+      teacher
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getTeacherById = async (req, res) => {
+  try {
+    const teacher = await Teacher.findById(req.params.id).populate("userId");
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    res.json(teacher);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getAllTeachers = async (req, res) => {
+  try {
+    const teachers = await Teacher.find().populate("userId");
+
+    res.json(teachers);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllTeachers = async (req, res) => {
+  try {
+    const teachers = await Teacher.find().populate("userId");
+
+    res.json(teachers);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

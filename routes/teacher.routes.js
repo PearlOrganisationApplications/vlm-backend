@@ -16,4 +16,23 @@ router.post(
   teacherController.registerTeacher
 );
 
+router.get("/:id", teacherController.getTeacherById);
+
+// 📋 GET ALL
+router.get("/", teacherController.getAllTeachers);
+
+// ✏️ UPDATE
+router.put(
+  "/:id",
+  upload.fields([
+    { name: "profilePic", maxCount: 1 },
+    { name: "certifications", maxCount: 10 },
+    { name: "resume", maxCount: 1 },
+    { name: "aadharCard", maxCount: 1 },
+    { name: "experienceDoc", maxCount: 1 },
+    { name: "qualificationCert", maxCount: 1 }
+  ]),
+  teacherController.updateTeacher
+);
+
 module.exports = router;
