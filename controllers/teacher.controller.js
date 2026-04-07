@@ -1,5 +1,6 @@
 const Teacher = require("../models/Teacher");
 const jwt = require("jsonwebtoken");
+
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const fs = require("fs");
@@ -95,27 +96,28 @@ exports.registerTeacher = async (req, res) => {
 
 
 
-
 exports.loginTeacher = async (req, res) => {
   try {
     const { phone } = req.body;
 
-    // 🔍 Find user by phone & role
-    const user = await User.findOne({ phone, role: "teacher" });
+    // 🔍 Find teacher by mobile
+    const teacher = await Teacher.findOne({
+      "BasicDetails.mobile": phone
+    });
 
-    if (!user) {
+    if (!teacher) {
       return res.status(404).json({ message: "Teacher not found" });
     }
 
-    // 🎫 Generate JWT Token
+    // 🔍 Get user from userId
+    const user = await User.findById(teacher.userId);
+
+    // 🎫 Token
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, role: "teacher" },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-
-    // 👤 Get teacher profile
-    const teacher = await Teacher.findOne({ userId: user._id });
 
     res.json({
       message: "Login successful",
