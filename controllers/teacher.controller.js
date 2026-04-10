@@ -94,6 +94,46 @@ exports.registerTeacher = async (req, res) => {
   }
 };
 
+exports.updateTeacherStatus = async (req, res) => {
+  try {
+    const { teacherId, status } = req.body;
+
+    // ✅ VALIDATION
+    if (!teacherId || !status) {
+      return res.status(400).json({
+        message: "teacherId and status are required"
+      });
+    }
+
+    if (!["APPROVED", "REJECTED"].includes(status)) {
+      return res.status(400).json({
+        message: "Invalid status value"
+      });
+    }
+
+    // 🔍 FIND TEACHER
+    const teacher = await Teacher.findById(teacherId);
+
+    if (!teacher) {
+      return res.status(404).json({
+        message: "Teacher not found"
+      });
+    }
+
+    // 🔄 UPDATE STATUS
+    teacher.status = status;
+    await teacher.save();
+
+    res.status(200).json({
+      message: `Teacher ${status.toLowerCase()} successfully`,
+      teacher
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
 
 exports.loginTeacher = async (req, res) => {
