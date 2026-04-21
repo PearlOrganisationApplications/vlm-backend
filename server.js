@@ -1,10 +1,11 @@
 require("dotenv").config();
-
+const http = require("http");
+const { Server } = require("socket.io");
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
-
+const socketConfig = require("./socket/index");
 // optional DB import
 const connectDB = require("./config/db");
 const adminRoutes = require("./routes/admin.routes");
@@ -14,6 +15,17 @@ const studentRoutes = require("./routes/student.routes");
 const teacherRoutes = require("./routes/teacher.routes");
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*", 
+    methods: ["GET", "POST"]
+  }
+});
+
+
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 connectDB();
 
@@ -41,8 +53,14 @@ app.use((err, req, res, next) => {
   });
 });
 
+
+app.use("/api/chat", require("./routes/chatRoutes"));
+
+
+socketConfig(io);
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

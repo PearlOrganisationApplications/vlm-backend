@@ -3,8 +3,6 @@ const razorpay = require("../config/razorpay");
 const crypto = require("crypto");
 const Student = require("../models/Student");
 
-// controllers/payment.controller.js
-
 
 exports.verifyPayment = async (req, res) => {
   try {
