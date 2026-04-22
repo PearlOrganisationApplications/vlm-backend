@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require("../controllers/admin.controller");
 const checkPermission = require("../middlewares/permission.middleware");
 const authMiddleware = require("../middlewares/auth.middleware");
+const adminCheck = require("../middlewares/admin.Middleware");
 
 // LOGIN (no auth)
 router.post("/login", controller.loginAdmin);
@@ -16,6 +17,9 @@ router.post(
 );
 console.log("authMiddleware:", typeof authMiddleware);
 console.log("controller:", typeof controller.createAdmin);
+
+
+router.post("/init", authMiddleware,adminCheck, controller.initLogic);
 
 // GET ALL
 router.get(
@@ -49,6 +53,7 @@ router.put(
   controller.updateAdmin
 );
 
+router.put("/admin/update/:id", authMiddleware,adminCheck, controller.updateValue);
 // DELETE
 router.delete(
   "/delete/:id",

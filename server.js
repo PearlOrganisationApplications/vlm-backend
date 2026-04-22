@@ -13,13 +13,14 @@ const permissionRoutes = require("./routes/permission.routes");
 const paymentRoutes = require("./routes/payment.routes");
 const studentRoutes = require("./routes/student.routes"); 
 const teacherRoutes = require("./routes/teacher.routes");
+const spinRoutes = require("./routes/spin.routes");
 
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", 
+    origin: "http://localhost:3000", 
     methods: ["GET", "POST"]
   }
 });
@@ -45,6 +46,8 @@ app.use("/api/permissions", permissionRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/students", studentRoutes); // Add this line to include student routes
 app.use("/api/teachers", teacherRoutes); // Add this line to include teacher routes
+app.use("/api/spin",spinRoutes );
+
 
 // global error handler (optional)
 app.use((err, req, res, next) => {

@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 
 
 exports.registerStudent = async (req, res) => {
+   console.log("Incoming Body:", req.body);
   try {
     const {
       phone,
@@ -99,7 +100,9 @@ exports.loginStudent = async (req, res) => {
   }
 
   const token = jwt.sign(
-    { id: user._id, role: user.role },
+    { id: user._id,
+       role: user.role ,
+      type: "USER"},
     process.env.JWT_SECRET
   );
 

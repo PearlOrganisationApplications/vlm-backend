@@ -12,7 +12,7 @@ const upload = require("../middlewares/upload.middleware");
 // ==========================
 
 // Register
-router.post("/register", studentController.registerStudent);
+router.post("/register", upload.single("profilePic"),studentController.registerStudent);
 
 // Login
 router.post("/login", studentController.loginStudent);

@@ -4,6 +4,7 @@ const Role = require("../models/Role");
 const ActivityLog = require("../models/ActivityLog");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Reward = require("../models/Reward")
 
 // CREATE ADMIN
 
@@ -164,3 +165,25 @@ exports.loginAdmin = async (req, res) => {
     permissions: admin.role.permissions,
   });
 };
+
+
+exports.initLogic = async (req, res) => {
+    const defaultLogic = [
+        { optionName: "Option 1", coins: 10, rupees: 1, isTryAgain: false },
+        { optionName: "Option 2", coins: 15, rupees: 2, isTryAgain: false },
+        { optionName: "Option 3", coins: 20, rupees: 3, isTryAgain: false },
+        { optionName: "Option 4", coins: 25, rupees: 4, isTryAgain: false },
+        { optionName: "Option 5", coins: 100, rupees: 10, isTryAgain: false },
+        { optionName: "Try Again", coins: 0, rupees: 0, isTryAgain: true }
+    ];
+    await Reward.deleteMany({});
+    await Reward.insertMany(defaultLogic);
+    res.json({ message: "Reward logic set successfully!" });
+};
+
+
+exports.updateValue = async (req, res) => {
+    const updated = await Reward.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json({ message: "Updated", updated });
+};
+
