@@ -6,8 +6,9 @@ const jwt = require("jsonwebtoken");
 
 exports.registerStudent = async (req, res) => {
    console.log("Incoming Body:", req.body);
+   console.log("Incoming File:", req.file);
   try {
-    const {
+    let {
       phone,
       email,
       password,
@@ -15,11 +16,27 @@ exports.registerStudent = async (req, res) => {
       planDetails
     } = req.body;
 
+
+ try {
+      if (typeof profile === "string") profile = JSON.parse(profile);
+      if (typeof planDetails === "string") planDetails = JSON.parse(planDetails);
+    } catch (e) {
+      return res.status(400).json({ message: "Invalid JSON format in profile or planDetails" });
+    }
+
+
     // 🔍 1. Check existing user
     const existing = await User.findOne({ phone });
     if (existing) {
       return res.status(400).json({ message: "User already exists" });
     }
+
+
+let profilePicUrl = null;
+    if (req.file) {
+      profilePicUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    }
+
 
     // 🧑‍💻 2. Create USER
     const user = await User.create({
@@ -56,7 +73,7 @@ exports.registerStudent = async (req, res) => {
           weakSubjects: profile.academicPreferences.weakSubjects
         },
 
-        profilePic: null // ✅ as required
+        profilePic: profilePicUrl  // ✅ as required
       },
 
       planDetails: {
@@ -77,8 +94,16 @@ exports.registerStudent = async (req, res) => {
 
     // 🚀 RESPONSE
     res.status(201).json({
-      message: "Registered successfully. Please complete ₹1 payment to activate trial.",
-      userId: user._id
+      success:  true,
+      message: "Registered successfully. Please complete ₹1 payment to activate trial." ,
+        data: {
+        user: {
+          _id: user._id,
+          phone: user.phone,
+          email: user.email
+        },
+        student: student 
+      }
     });
 
   } catch (error) {
