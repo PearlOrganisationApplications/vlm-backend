@@ -48,7 +48,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/students", studentRoutes); // Add this line to include student routes
 app.use("/api/teachers", teacherRoutes); // Add this line to include teacher routes
 app.use("/api/spin",spinRoutes );
-
+app.use("/api/admin/content", require("./routes/admin.content.routes"));
 
 // global error handler (optional)
 app.use((err, req, res, next) => {

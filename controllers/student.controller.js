@@ -1,7 +1,8 @@
 const User = require("../models/User");
 const Student = require("../models/Student");
 const jwt = require("jsonwebtoken");
-
+const Subject = require("../models/Subject");
+const StudyMaterial = require("../models/StudyMaterial")
 
 
 exports.registerStudent = async (req, res) => {
@@ -96,14 +97,8 @@ let profilePicUrl = null;
     res.status(201).json({
       success:  true,
       message: "Registered successfully. Please complete ₹1 payment to activate trial." ,
-        data: {
-        user: {
-          _id: user._id,
-          phone: user.phone,
-          email: user.email
-        },
-        student: student 
-      }
+        data: student 
+      
     });
 
   } catch (error) {
@@ -268,4 +263,42 @@ exports.updateStudent = async (req, res) => {
 exports.deleteStudent = async (req, res) => {
   await Student.findByIdAndDelete(req.params.id);
   res.json({ message: "Student deleted" });
+};
+
+
+// Example Controller Logic for Student
+exports.getStudentSubjects = async (req, res) => {
+  try {
+    // 1. Student ki profile find karein
+    const student = await Student.findOne({ userId: req.user.id });
+    const { class: sClass, board: sBoard } = student.profile.education;
+
+    // 2. Sirf wahi subjects layein jo student ki class/board ke hain
+    const subjects = await Subject.find({ className: sClass, board: sBoard });
+
+    res.status(200).json({ success: true, data: subjects });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+// Filtered Content API
+exports.getContentByCard = async (req, res) => {
+  try {
+    const { contentType } = req.query; // Card se type aayega: PYQ, VIDEO, etc.
+    const student = await Student.findOne({ userId: req.user.id });
+    const { class: sClass, board: sBoard } = student.profile.education;
+
+    // Matching content find karein
+    const materials = await StudyMaterial.find({ 
+      className: sClass, 
+      board: sBoard,
+      contentType: contentType 
+    }).populate("subjectId", "name");
+
+    res.status(200).json({ success: true, data: materials });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
