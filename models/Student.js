@@ -8,6 +8,7 @@ const studentSchema = new mongoose.Schema({
     required: true
   },
 
+  vlmId: {type: String},
   profile: {
     personalDetails: {
       fullName: String,

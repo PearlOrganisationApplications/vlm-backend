@@ -122,6 +122,16 @@ exports.loginStudent = async (req, res) => {
     if (!studentData) {
       return res.status(404).json({ success: false, message: "Student profile data not found" });
     }
+
+ if (!studentData.vlmId) {
+    const randomNumber = Math.floor(1000 + Math.random() * 9000); // 6 digits ka random number
+    const generatedId = `VLM-STU-${randomNumber}`;
+    
+    // Database mein update karein
+    studentData.vlmId = generatedId;
+    await studentData.save();
+  }
+
   const token = jwt.sign(
     { id: user._id,
        role: user.role ,
