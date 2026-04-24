@@ -117,6 +117,11 @@ exports.loginStudent = async (req, res) => {
     return res.status(400).json({ message: "Invalid password" });
   }
 
+  const studentData = await Student.findOne({ userId: user._id });
+
+    if (!studentData) {
+      return res.status(404).json({ success: false, message: "Student profile data not found" });
+    }
   const token = jwt.sign(
     { id: user._id,
        role: user.role ,
@@ -124,7 +129,13 @@ exports.loginStudent = async (req, res) => {
     process.env.JWT_SECRET
   );
 
-  res.json({ token });
+  res.json({ 
+success: true,
+message: "Login successfull",
+token : token,
+data : studentData
+
+  });
 };
 
 
