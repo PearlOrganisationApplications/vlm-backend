@@ -14,6 +14,9 @@ router.post(
   paymentController.createOrder
 );
 
+router.get("/all", authMiddleware, paymentController.getAllOrders);
+
+router.get("/getByUserId/:userId", authMiddleware, paymentController.getOrdersByUserId);
 /**
  * ✅ Verify Payment & Activate Trial (NO WEBHOOK)
  */
