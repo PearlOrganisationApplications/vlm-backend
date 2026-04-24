@@ -14,6 +14,8 @@ const paymentRoutes = require("./routes/payment.routes");
 const studentRoutes = require("./routes/student.routes"); 
 const teacherRoutes = require("./routes/teacher.routes");
 const spinRoutes = require("./routes/spin.routes");
+const studentMocktestRoutes = require("./routes/student.mocktest.routes")
+
 
 const app = express();
 const server = http.createServer(app);
@@ -49,7 +51,7 @@ app.use("/api/students", studentRoutes); // Add this line to include student rou
 app.use("/api/teachers", teacherRoutes); // Add this line to include teacher routes
 app.use("/api/spin",spinRoutes );
 app.use("/api/admin/content", require("./routes/admin.content.routes"));
-
+app.use("/api/student-mocktest", studentMocktestRoutes)
 // global error handler (optional)
 app.use((err, req, res, next) => {
   res.status(500).json({

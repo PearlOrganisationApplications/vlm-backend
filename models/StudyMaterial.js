@@ -9,6 +9,8 @@ const studyMaterialSchema = new mongoose.Schema(
     },
     title: { type: String, required: true, trim: true },
     description: { type: String },
+    chapterName: { type: String, required: true },
+    chapterNumber: { type: Number },
     contentType: {
       type: String,
       required: true,
@@ -25,14 +27,19 @@ const studyMaterialSchema = new mongoose.Schema(
         "MOCK_TEST",
         "CHAPTER_SUMMARY",
         "ASSIGNMENTS",
-        "IMPORTANT_QUESTIONS"
+        "IMPORTANT_QUESTIONS",
       ],
     },
     fileUrl: { type: String },
     videoUrl: { type: String },
     className: { type: String, required: true },
     board: { type: String, required: true },
-    isPremium: { type: Boolean, default: false },
+     accessPlan: {
+    type: String,
+    enum: ["BASIC", "PRO", "PREMIUM"],
+    default: "BASIC", 
+    required: true
+  }
   },
   { timestamps: true },
 );

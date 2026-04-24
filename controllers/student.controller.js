@@ -1,8 +1,6 @@
 const User = require("../models/User");
 const Student = require("../models/Student");
 const jwt = require("jsonwebtoken");
-const Subject = require("../models/Subject");
-const StudyMaterial = require("../models/StudyMaterial")
 
 
 exports.registerStudent = async (req, res) => {
@@ -228,7 +226,6 @@ exports.updateStudent = async (req, res) => {
       updateData = req.body;
     }
 
-    // FORM-DATA
     if (req.is("multipart/form-data")) {
       updateData = { ...req.body };
 
@@ -237,7 +234,6 @@ exports.updateStudent = async (req, res) => {
       }
     }
 
-    // ✅ FILE HANDLING WITH FULL URL
     if (req.file) {
       updateData.profile = updateData.profile || {};
 
@@ -266,39 +262,4 @@ exports.deleteStudent = async (req, res) => {
 };
 
 
-// Example Controller Logic for Student
-exports.getStudentSubjects = async (req, res) => {
-  try {
-    // 1. Student ki profile find karein
-    const student = await Student.findOne({ userId: req.user.id });
-    const { class: sClass, board: sBoard } = student.profile.education;
 
-    // 2. Sirf wahi subjects layein jo student ki class/board ke hain
-    const subjects = await Subject.find({ className: sClass, board: sBoard });
-
-    res.status(200).json({ success: true, data: subjects });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-
-// Filtered Content API
-exports.getContentByCard = async (req, res) => {
-  try {
-    const { contentType } = req.query; // Card se type aayega: PYQ, VIDEO, etc.
-    const student = await Student.findOne({ userId: req.user.id });
-    const { class: sClass, board: sBoard } = student.profile.education;
-
-    // Matching content find karein
-    const materials = await StudyMaterial.find({ 
-      className: sClass, 
-      board: sBoard,
-      contentType: contentType 
-    }).populate("subjectId", "name");
-
-    res.status(200).json({ success: true, data: materials });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};

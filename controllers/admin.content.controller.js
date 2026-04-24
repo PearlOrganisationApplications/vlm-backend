@@ -1,5 +1,9 @@
 const Subject = require("../models/Subject");
 const StudyMaterial = require("../models/StudyMaterial");
+const Student = require("../models/Student");
+const MockTest = require("../models/MockTest");
+
+
 
 exports.createSubject = async (req, res) => {
   try {
@@ -20,7 +24,7 @@ exports.createSubject = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Subject create karne mein error aaya",
+      message: "Error while creating the Subject",
       error: error.message
     });
   }
@@ -29,20 +33,19 @@ exports.createSubject = async (req, res) => {
 
 exports.uploadMaterial = async (req, res) => {
   try {
-    const { subjectId, title, description, contentType } = req.body;
+    const { subjectId, title, description, contentType, chapterName, chapterNumber, accessPlan } = req.body;
 
-    // 1. Pehle check karein ki file aayi hai ya nahi
     if (!req.file) {
       return res.status(400).json({ 
         success: false, 
-        message: "Kripya file select karein (PDF ya Video)" 
+        message: "Please slect the file (PDF or Video)" 
       });
     }
 
  const validTypes = [
       "PDF", "VIDEO", "PYQ", "QUESTION_BANK", "TEXTBOOK", 
-      "SAMPLE_PAPER", "WORKSHEET", "REVISION_NOTES", "FORMULA_SHEET", 
-      "MOCK_TEST", "CHAPTER_SUMMARY", "ASSIGNMENTS", "IMPORTANT_QUESTIONS"
+      "SAMPLE_PAPER", "WORKSHEET", "REVISION_NOTES", "FORMULA_SHEET", "MOCK_TEST"
+      , "CHAPTER_SUMMARY", "ASSIGNMENTS", "IMPORTANT_QUESTIONS"
     ];
 
     if (!validTypes.includes(contentType)) {
@@ -52,7 +55,6 @@ exports.uploadMaterial = async (req, res) => {
       });
     }
 
-    // 2. Subject ki details nikaalein (Class aur Board automatic lene ke liye)
     const subject = await Subject.findById(subjectId);
     if (!subject) {
       return res.status(404).json({ 
@@ -64,18 +66,20 @@ exports.uploadMaterial = async (req, res) => {
 
 
     const protocol = req.protocol; 
-    // Isse localhost:5000 ya aapka domain name milega
+  
     const host = req.get("host"); 
-    // Pura URL taiyar karein
     const fullUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
-    // 4. Data object taiyar karein
+
     const newMaterialData = {
       subjectId: subjectId,
       title: title,
       description: description,
       contentType: contentType, 
+      chapterName: chapterName,
+      chapterNumber: chapterNumber,
       className: subject.className, 
-      board: subject.board           
+      board: subject.board,
+      accessPlan : accessPlan  || "BASIC"          
     };
 
     if (contentType === "VIDEO") {
@@ -101,3 +105,32 @@ exports.uploadMaterial = async (req, res) => {
     });
   }
 };
+
+
+exports.createMockTest = async (req, res) => {
+  try {
+    const { subjectId, title, duration, questions, chapterName } = req.body;
+
+    // Subject se class aur board khud nikalna
+    const subject = await Subject.findById(subjectId);
+    if (!subject) return res.status(404).json({ message: "Subject not found" });
+
+    const mockTest = await MockTest.create({
+      subjectId,
+      title,
+      duration,
+      questions, 
+      chapterName,
+      className: subject.className,
+      board: subject.board,
+      totalMarks: questions.length // Maan lete hain 1 question = 1 mark
+    });
+
+    res.status(201).json({ success: true, message: "Mock Test Created", data: mockTest });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
