@@ -106,6 +106,69 @@ exports.uploadMaterial = async (req, res) => {
   }
 };
 
+exports.getAllSubjects = async (req, res) => {
+  try {
+    // Database se saare subjects fetch karna
+    const subjects = await Subject.find();
+
+    // Response bhejna
+    res.status(200).json({
+      success: true,
+      message: "All Subjects fetched successfully",
+      count: subjects.length, // Total kitne subjects mile
+      data: subjects
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error while fetching subjects",
+      error: error.message
+    });
+  }
+};
+
+exports.getMaterials = async (req, res) => {
+  try {
+    const { type } = req.query;
+
+    let filter = {};
+
+    if (type) {
+      const validTypes = [
+        "PDF", "VIDEO", "PYQ", "QUESTION_BANK", "TEXTBOOK", 
+        "SAMPLE_PAPER", "WORKSHEET", "REVISION_NOTES", "FORMULA_SHEET", 
+        "MOCK_TEST", "CHAPTER_SUMMARY", "ASSIGNMENTS", "IMPORTANT_QUESTIONS"
+      ];
+
+      if (validTypes.includes(type.toUpperCase())) {
+        filter.contentType = type.toUpperCase();
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid content type query"
+        });
+      }
+    }
+
+    // Database se data nikalna (Subject details ke saath)
+    const materials = await StudyMaterial.find(filter).populate("subjectId");
+
+    res.status(200).json({
+      success: true,
+      message: type ? `${type} materials fetched` : "All materials fetched",
+      results: materials.length,
+      data: materials
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Data fetch karne mein error aaya",
+      error: error.message
+    });
+  }
+};
+
 
 exports.createMockTest = async (req, res) => {
   try {

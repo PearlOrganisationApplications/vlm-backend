@@ -138,7 +138,12 @@ exports.updateTeacherStatus = async (req, res) => {
 
 exports.loginTeacher = async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { phone, password } = req.body;
+
+
+     if (!phone || !password) {
+      return res.status(400).json({ message: "Phone and password are required" });
+    }
 
     // 🔍 Find teacher by mobile
     const teacher = await Teacher.findOne({
@@ -152,17 +157,26 @@ exports.loginTeacher = async (req, res) => {
     // 🔍 Get user from userId
     const user = await User.findById(teacher.userId);
 
+if (!user) {
+      return res.status(404).json({ message: "User account not found" });
+    }
+
+      
+    const isMatch = await bcrypt.compare(password, user.password);
+     if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials (wrong password)" });
+    }
     // 🎫 Token
     const token = jwt.sign(
       { id: user._id, role: "teacher" },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-
+ const teacherObj = teacher.toObject();
     res.json({
       message: "Login successful",
       token,
-      teacher
+      teacher: teacherObj
     });
 
   } catch (err) {
