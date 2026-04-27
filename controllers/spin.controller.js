@@ -2,6 +2,31 @@ const Student = require("../models/Student");
 
 const Reward = require("../models/Reward")
 
+
+exports.getLogic = async (req, res) => {
+    try {
+        // Database se saare options nikalne ke liye
+        const rewards = await Reward.find({});
+
+        // Agar data nahi milta
+        if (!rewards || rewards.length === 0) {
+            return res.status(404).json({ message: "No rewards found" });
+        }
+
+        // Frontend ko response bhejna
+        res.status(200).json({
+            success: true,
+            data: rewards
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message
+        });
+    }
+};
+
 exports.spinNow = async (req, res) => {
   try {
     const userId = req.user._id;
