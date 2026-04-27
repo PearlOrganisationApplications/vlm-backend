@@ -15,18 +15,18 @@ exports.spinNow = async (req, res) => {
     }
 
     const now = new Date();
-    if (student.lastSpinTime) {
-      const diffInMs = now - new Date(student.lastSpinTime);
-      const diffInHours = diffInMs / (1000 * 60 * 60);
+    // if (student.lastSpinTime) {
+    //   const diffInMs = now - new Date(student.lastSpinTime);
+    //   const diffInHours = diffInMs / (1000 * 60 * 60);
 
-      if (diffInHours < 24) {
-        const remainingHours = Math.ceil(24 - diffInHours);
-        return res.status(400).json({
-          success: false,
-          message: `Aapne aaj ka spin kar liya hai. ${remainingHours} ghante baad koshish karein.`,
-        });
-      }
-    }
+    //   if (diffInHours < 24) {
+    //     const remainingHours = Math.ceil(24 - diffInHours);
+    //     return res.status(400).json({
+    //       success: false,
+    //       message: `Aapne aaj ka spin kar liya hai. ${remainingHours} ghante baad koshish karein.`,
+    //     });
+    //   }
+    // }
 
     const rewards = await Reward.find();
 
