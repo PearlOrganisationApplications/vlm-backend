@@ -5,7 +5,7 @@ const ActivityLog = require("../models/ActivityLog");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Reward = require("../models/Reward")
-
+const InterviewSlot = require("../models/InterviewSlot")
 // CREATE ADMIN
 
 
@@ -187,3 +187,47 @@ exports.updateValue = async (req, res) => {
     res.json({ message: "Updated", updated });
 };
 
+
+exports.createSlots = async (req, res) => {
+  try {
+    const { date, times, status } = req.body; 
+    // Example: date: "2024-06-25", times: ["10:00 AM", "02:00 PM"], status: "OPEN"
+
+    if (!date || !times || !Array.isArray(times)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Date and an array of times are required." 
+      });
+    }
+
+    // Date se Day nikalne ka logic (e.g., "Tuesday")
+    const dayName = new Date(date).toLocaleString('en-us', { weekday: 'long' });
+
+    // Data prepare karein
+    const slotsData = times.map(time => ({
+      date: new Date(date),
+      day: dayName,
+      time: time,
+      status: status || "OPEN", // Agar body mein status hai toh wo, nahi toh "OPEN"
+      teacherId: null,
+    
+    }));
+
+    // Database mein insert karein
+    // insertMany() function humein wo saare documents return karta hai jo save huye hain
+    const createdSlots = await InterviewSlot.insertMany(slotsData);
+
+    // Response mein message aur slots dono bhejein
+    res.status(201).json({ 
+      success: true,
+      message: `${createdSlots.length} slots created successfully.`,
+      data: createdSlots // Isme saare created slots ki details hogi (_id ke sath)
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};

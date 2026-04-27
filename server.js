@@ -16,7 +16,7 @@ const teacherRoutes = require("./routes/teacher.routes");
 const spinRoutes = require("./routes/spin.routes");
 const studentMocktestRoutes = require("./routes/student.mocktest.routes");
 const parentRoutes = require("./routes/parent.routes");
-
+const interviewRoutes = require("./routes/interview.routes")
 
 const app = express();
 const server = http.createServer(app);
@@ -53,7 +53,8 @@ app.use("/api/teachers", teacherRoutes); // Add this line to include teacher rou
 app.use("/api/spin",spinRoutes );
 app.use("/api/admin/content", require("./routes/admin.content.routes"));
 app.use("/api/student-mocktest", studentMocktestRoutes);
-app.use("/api/parent", parentRoutes)
+app.use("/api/parent", parentRoutes);
+app.use("/api/interview",interviewRoutes );
 // global error handler (optional)
 app.use((err, req, res, next) => {
   res.status(500).json({

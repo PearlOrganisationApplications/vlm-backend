@@ -1,85 +1,84 @@
-const Interview = require("../models/Interview");
+const InterviewSlot = require("../models/InterviewSlot")
+const Teacher = require("../models/Teacher")
 
-// 1. Teacher Slots select karega
-exports.selectSlots = async (req, res) => {
+exports.getAvailableSlots = async (req, res) => {
   try {
-    const { teacherId, scheduledDate, times } = req.body; 
-    // times example: ["10:00 AM", "01:00 PM", "04:30 PM"]
+    const availableSlots = await InterviewSlot.find({ status: "OPEN" }).sort({ date: 1 });
+    res.status(200).json(availableSlots);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
-    if (!times || !Array.isArray(times)) {
-      return res.status(400).json({ message: "Please provide an array of times." });
-    }
+// 2. Teacher apna slot book karega
+exports.bookMultipleSlots = async (req, res) => {
+  try {
+    const { teacherId, slotIds } = req.body; 
+    // Example: slotIds: ["ID1", "ID2"]
 
-    const day = new Date(scheduledDate).toLocaleString('en-us', { weekday: 'long' });
+    const updated = await InterviewSlot.updateMany(
+      { _id: { $in: slotIds }, status: "OPEN" },
+      { $set: { teacherId: teacherId, status: "BOOKED" } }
+    );
 
-    // Check agar us din ka record pehle se hai
-    let interviewEntry = await Interview.findOne({ teacherId, scheduledDate });
+    const bookedSlotsData = await InterviewSlot.find({
+      _id: { $in: slotIds },
+      teacherId: teacherId
+    });
 
-    if (interviewEntry) {
-      // Naye times add karo jo pehle se nahi hain
-      const existingTimes = interviewEntry.slots.map(s => s.time);
-      const uniqueNewSlots = times
-        .filter(t => !existingTimes.includes(t))
-        .map(t => ({ time: t }));
-
-      interviewEntry.slots.push(...uniqueNewSlots);
-      await interviewEntry.save();
-    } else {
-      // Naya record create karo
-      interviewEntry = new Interview({
-        teacherId,
-        scheduledDate,
-        day,
-        slots: times.map(t => ({ time: t }))
-      });
-      await interviewEntry.save();
-    }
-
-    res.status(201).json({
-      message: "Slots scheduled successfully",
-      data: interviewEntry
+    res.status(200).json({
+      success: true,
+      message: `${updated.modifiedCount} slots booked successfully.`,
+       data: bookedSlotsData
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// 2. Demo Video Upload logic
-exports.uploadInterviewVideo = async (req, res) => {
-  try {
-    const { interviewId } = req.params;
 
-    if (!req.file) {
-      return res.status(400).json({ message: "No video file uploaded" });
+
+exports.handleDemoVideo = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+    const { recordedUrl } = req.body; 
+
+    let finalVideoUrl = "";
+
+
+    if (req.file) {
+
+      finalVideoUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    } 
+   
+    else if (recordedUrl) {
+      finalVideoUrl = recordedUrl;
+    } 
+    else {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Please upload a video file or provide a recorded video URL" 
+      });
     }
 
-    // Interview document ko update karo video path ke sath
-    const updatedInterview = await Interview.findByIdAndUpdate(
-      interviewId,
-      { demoVideo: req.file.path },
+    const updatedTeacher = await Teacher.findByIdAndUpdate(
+      teacherId,
+      { "ExperienceDetails.demoVideo": finalVideoUrl },
       { new: true }
     );
 
-    if (!updatedInterview) {
-      return res.status(404).json({ message: "Interview record not found" });
+    if (!updatedTeacher) {
+      return res.status(404).json({ success: false, message: "Teacher not found" });
     }
 
     res.status(200).json({
-      message: "Demo video uploaded successfully",
-      videoPath: req.file.path,
-      data: updatedInterview
+      success: true,
+      message: "Demo video saved successfully",
+      videoUrl: finalVideoUrl,
+      data: updatedTeacher.ExperienceDetails
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
-// 3. Teacher ke saare scheduled slots dekhne ke liye
-exports.getMyInterviews = async (req, res) => {
-  try {
-    const interviews = await Interview.find({ teacherId: req.params.teacherId }).sort({ scheduledDate: 1 });
-    res.status(200).json(interviews);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };

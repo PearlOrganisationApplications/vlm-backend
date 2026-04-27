@@ -1,7 +1,7 @@
 const Student = require("../models/Student");
 
 const Reward = require("../models/Reward")
-
+const SpinHistory = require("../models/SpinHistory")
 
 exports.getLogic = async (req, res) => {
     try {
@@ -73,6 +73,15 @@ exports.spinNow = async (req, res) => {
     }
 
     await student.save();
+     await SpinHistory.create({
+     studentId: student._id,
+      rewardName: selectedReward.optionName,
+      coinsWon: selectedReward.coins,
+      rupeesWon: selectedReward.rupees,
+      isTryAgain: selectedReward.isTryAgain
+    });
+
+
     return res.status(200).json({
       success: true,
       message: selectedReward.isTryAgain ? "Try Again! Kuch nahi mila." : "Badhai ho! Aapne reward jeeta.",
@@ -94,6 +103,52 @@ exports.spinNow = async (req, res) => {
       success: false, 
       message: "Server mein koi kharabhi aayi hai", 
       error: error.message 
+    });
+  }
+};
+
+
+exports.getSpinDetailById = async (req, res) => {
+  try {
+    const { id } = req.params; // URL se ID lenge
+
+    // Database mein us ID ka spin record dhoondenge
+    const spinRecord = await SpinHistory.findById(id);
+
+    // Agar record nahi milta
+    if (!spinRecord) {
+      return res.status(404).json({
+        success: false,
+        message: "Spin record nahi mila! Shayad ID galat hai."
+      });
+    }
+
+    // Agar record mil gaya toh usey return karenge
+    return res.status(200).json({
+      success: true,
+      data: {
+        rewardName: spinRecord.rewardName,
+        coinsWon: spinRecord.coinsWon,
+        rupeesWon: spinRecord.rupeesWon,
+        isTryAgain: spinRecord.isTryAgain,
+        date: spinRecord.createdAt,
+        id: spinRecord._id
+      }
+    });
+
+  } catch (error) {
+    // Agar ID ka format galat hai (Invalid ObjectId)
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ID format! Kripya sahi ID bhein."
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
     });
   }
 };

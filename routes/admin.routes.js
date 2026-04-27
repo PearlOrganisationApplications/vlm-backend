@@ -18,6 +18,7 @@ router.post(
 console.log("authMiddleware:", typeof authMiddleware);
 console.log("controller:", typeof controller.createAdmin);
 
+router.post("/create-slots", authMiddleware, controller.createSlots)
 
 router.post("/init", authMiddleware,adminCheck, controller.initLogic);
 
