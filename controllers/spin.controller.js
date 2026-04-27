@@ -73,7 +73,8 @@ exports.spinNow = async (req, res) => {
     }
 
     await student.save();
-     await SpinHistory.create({
+
+      const newSpin = await SpinHistory.create({
      studentId: student._id,
       rewardName: selectedReward.optionName,
       coinsWon: selectedReward.coins,
@@ -86,6 +87,7 @@ exports.spinNow = async (req, res) => {
       success: true,
       message: selectedReward.isTryAgain ? "Try Again! Kuch nahi mila." : "Badhai ho! Aapne reward jeeta.",
       reward: {
+        spinId: newSpin._id,
         option: selectedReward.optionName,
         coinsWon: selectedReward.coins,
         rupeesWon: selectedReward.rupees,

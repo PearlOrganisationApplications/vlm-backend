@@ -66,7 +66,10 @@ const teacherSchema = new mongoose.Schema({
       qualificationCert: String
     }
   },
-
+demoVideo: {
+  type: String,
+  default : ""
+},
   isVerified: {
     type: Boolean,
     default: false

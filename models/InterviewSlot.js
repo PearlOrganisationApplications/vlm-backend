@@ -10,7 +10,7 @@ const slotSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  
+
   time: {
     type: String, // e.g., "10:00 AM"
     required: true
@@ -29,10 +29,7 @@ const slotSchema = new mongoose.Schema({
     type: String,
     default: ""
   },
-  demoVideo: {
-    type: String,
-    default: ""
-  }
+ 
 }, { timestamps: true });
 
 module.exports = mongoose.model("InterviewSlot", slotSchema);

@@ -41,7 +41,7 @@ exports.bookMultipleSlots = async (req, res) => {
 exports.handleDemoVideo = async (req, res) => {
   try {
     const { teacherId } = req.params;
-    const { recordedUrl } = req.body; 
+    const { recordedUrl , subjectId} = req.body; 
 
     let finalVideoUrl = "";
 
@@ -61,9 +61,18 @@ exports.handleDemoVideo = async (req, res) => {
       });
     }
 
+ const updateQuery = {
+      $set: { "ExperienceDetails.demoVideo": finalVideoUrl }
+    };
+
+    if (subjectId) {
+      updateQuery.$addToSet = { "ExperienceDetails.subjects": subjectId };
+    }
+
+
     const updatedTeacher = await Teacher.findByIdAndUpdate(
       teacherId,
-      { "ExperienceDetails.demoVideo": finalVideoUrl },
+      updateQuery,
       { new: true }
     );
 
@@ -75,6 +84,7 @@ exports.handleDemoVideo = async (req, res) => {
       success: true,
       message: "Demo video saved successfully",
       videoUrl: finalVideoUrl,
+        subjectId: subjectId,
       data: updatedTeacher.ExperienceDetails
     });
 
