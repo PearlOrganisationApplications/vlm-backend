@@ -9,7 +9,9 @@ const testAttemptSchema = new mongoose.Schema({
   wrongAnswers: { type: Number },
   answers: [{
     questionIndex: Number,
-    selectedOption: Number,
+    selectedOption: {
+      type: String
+    },
     isCorrect: Boolean
   }],
   timeTaken: { type: Number } // Seconds mein

@@ -69,7 +69,7 @@ exports.submitTest = async (req, res) => {
       const studentAns = studentAnswers.find(a => a.questionIndex === index);
       
       // Sahi answer check karo
-      const isCorrect = studentAns && studentAns.selectedOption === q.correctAnswer;
+      const isCorrect = studentAns && String(studentAns.selectedOption )=== String(q.correctAnswer);
       
       if (isCorrect) {
         score++;
@@ -81,7 +81,8 @@ exports.submitTest = async (req, res) => {
     
       detailedAnswers.push({
         questionIndex: index,
-        selectedOption: studentAns ? studentAns.selectedOption : -1,
+        selectedOption: studentAns ? studentAns.selectedOption : "Not Answered",
+      isCorrect: isCorrect
       });
     });
 
@@ -119,7 +120,7 @@ exports.getAttemptHistory = async (req, res) => {
    
     const student = await Student.findOne({ userId: req.user.id });
     if (!student) {
-      return res.status(404).json({ success: false, message: "Student profile nahi mili" });
+      return res.status(404).json({ success: false, message: "Student profile not found" });
     }
 
  
@@ -190,7 +191,7 @@ exports.getMaterialsForStudent = async (req, res) => {
     console.error("Fetch Error:", error);
     res.status(500).json({
       success: false,
-      message: "Material dikhane mein error aaya",
+      message: "Error while fetching the Material details",
       error: error.message
     });
   }
