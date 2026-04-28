@@ -65,6 +65,7 @@ app.use("/api/student-mocktest", studentMocktestRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/interview",interviewRoutes );
 app.use("/api/reels", require("./routes/reel.routes"));
+app.use("/api/videos", require("./routes/video.routes"));
 
 app.use("/api/rewards", rewardsRoutes);
 app.use("/api/doubts", doubtRoutes);
