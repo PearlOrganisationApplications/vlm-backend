@@ -57,92 +57,63 @@ exports.getQuestions = async (req, res) => {
 // 2. Submit Test & Calculate Results
 exports.submitTest = async (req, res) => {
   try {
-    const { studentId, subject, answers } = req.body; 
-    // answers format: [{ questionId: "...", selectedOption: 2 }, { questionId: "...", selectedOption: 0 }]
-
-    if (!answers || answers.length === 0) {
-      return res.status(400).json({ message: "No answers submitted" });
-    }
+    const { studentId, subject, answers } = req.body;
 
     let correctCount = 0;
-    let incorrectCount = 0;
-    let totalScoreGained = 0;
-    let totalPossibleMarks = 0;
-    let detailedBreakdown = [];
+    let totalMarks = 0;
+    let scoreGained = 0;
+    let attemptDetails = [];
 
-    // Loop through each answer submitted by the student
     for (let ans of answers) {
-      const question = await Question.findById(ans.questionId);
-
-      if (question) {
-        totalPossibleMarks += question.marks;
-        const isCorrect = question.correctOption === ans.selectedOption;
+      const q = await Question.findById(ans.questionId);
+      if (q) {
+        totalMarks += q.marks;
+        const isCorrect = q.correctOption === Number(ans.selectedOption);
 
         if (isCorrect) {
           correctCount++;
-          totalScoreGained += question.marks;
-        } else {
-          incorrectCount++;
+          scoreGained += q.marks;
         }
 
-        // Detailed analysis for each question
-        detailedBreakdown.push({
-          questionText: question.questionText,
-          options: question.options,
-          yourAnswer: question.options[ans.selectedOption] || "Not Answered",
-          correctAnswer: question.options[question.correctOption],
-          status: isCorrect ? "CORRECT" : "WRONG",
-          marksAwarded: isCorrect ? question.marks : 0
+        // Detailed analysis ke liye ye array zaroori hai
+        attemptDetails.push({
+          questionId: q._id,
+          selectedOption: Number(ans.selectedOption),
+          correctOption: q.correctOption,
+          isCorrect: isCorrect
         });
       }
     }
 
     const totalQuestions = answers.length;
-    const accuracy = totalQuestions > 0 ? ((correctCount / totalQuestions) * 100).toFixed(2) : 0;
 
-    // Save this result to Database for history
-    const testResult = new TestResult({
+    // --- FIX: Accuracy ko Number ki tarah calculate karein (Bina % ke) ---
+    const calculatedAccuracy = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
+
+    const newResult = new TestResult({
       studentId,
       subject,
       totalQuestions,
       correctAnswers: correctCount,
-      incorrectAnswers: incorrectCount,
-      scoreGained: totalScoreGained,
-      totalMarks: totalPossibleMarks,
-      accuracy: `${accuracy}%`,
-      attempts: answers.map(a => ({
-        questionId: a.questionId,
-        selectedOption: a.selectedOption,
-        isCorrect: detailedBreakdown.find(d => d.questionText === d.questionText).status === "CORRECT" // matching logic
-      }))
+      incorrectAnswers: totalQuestions - correctCount,
+      scoreGained,
+      totalMarks,
+      accuracy: calculatedAccuracy, // Sirf Number jayega (e.g. 100.00)
+      attempts: attemptDetails       // Detailed report ke liye ye save hona chahiye
     });
 
-    await testResult.save();
+    await newResult.save();
 
-    // RETURN THE FULL SCORECARD IMMEDIATELY
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      message: "Test Completed Successfully!",
-      scorecard: {
-        testSummary: {
-          subject: subject,
-          totalQuestions: totalQuestions,
-          correctAnswers: correctCount,
-          incorrectAnswers: incorrectCount,
-          totalMarksObtained: totalScoreGained,
-          maxMarks: totalPossibleMarks,
-          accuracyPercentage: `${accuracy}%`,
-          performanceStatus: accuracy >= 70 ? "Excellent" : accuracy >= 40 ? "Good" : "Needs Improvement"
-        },
-        detailedReport: detailedBreakdown
-      }
+      message: "Test submitted successfully",
+      resultId: newResult._id
     });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
 exports.createQuestion = async (req, res) => {
   try {
     const { subject, class: qClass, board, questionText, options, correctOption, marks } = req.body;
@@ -196,63 +167,49 @@ exports.getScoreCard = async (req, res) => {
     const { resultId } = req.params;
 
     const result = await TestResult.findById(resultId)
-      .populate({
-        path: 'studentId',
-        select: 'profile.personalDetails.fullName profile.education'
-      })
-      .populate({
-        path: 'attempts.questionId',
-        select: 'questionText options'
-      });
+      .populate({ path: 'studentId', select: 'profile.personalDetails.fullName' })
+      .populate({ path: 'attempts.questionId', select: 'questionText options correctOption explanation' });
 
-    if (!result) {
-      return res.status(404).json({ message: "Scorecard not found!" });
-    }
+    if (!result) return res.status(404).json({ message: "Scorecard not found!" });
 
-    // --- ACCURACY LOGIC ---
-    // Agar DB mein "100.00%" (String) hai toh wahi dikhaye, 
-    // agar Number hai toh format karein.
-    let displayAccuracy = "0.00%";
-    if (result.accuracy) {
-      if (typeof result.accuracy === 'string') {
-        displayAccuracy = result.accuracy; // "100.00%" as it is
-      } else {
-        displayAccuracy = `${result.accuracy.toFixed(2)}%`;
-      }
-    }
+    // DB se number uthakar format karein
+    const accValue = result.accuracy || 0;
+    const accDisplay = `${accValue.toFixed(0)}%`; // UI ke liye "100%"
 
-    // --- DETAILED ANALYSIS LOGIC ---
-    let report = [];
-    if (result.attempts && result.attempts.length > 0) {
-      report = result.attempts.map(item => {
-        const qText = item.questionId ? item.questionId.questionText : "Question Deleted";
-        const opts = item.questionId ? item.questionId.options : [];
-        
-        return {
-          question: qText,
-          yourAnswer: opts[item.selectedOption] || "N/A",
-          correctAnswer: opts[item.correctOption] || "N/A",
-          status: item.isCorrect ? "CORRECT" : "WRONG"
-        };
-      });
-    }
+    const detailedAnalysis = (result.attempts || []).map(item => ({
+      questionText: item.questionId ? item.questionId.questionText : "Question Deleted",
+      options: item.questionId ? item.questionId.options : [],
+      userAnswerIndex: item.selectedOption,
+      correctAnswerIndex: item.questionId ? item.questionId.correctOption : null,
+      isCorrect: item.isCorrect,
+      explanation: item.questionId?.explanation || "Practice more!"
+    }));
 
     res.status(200).json({
       success: true,
-      studentName: result.studentId?.profile?.personalDetails?.fullName || "Student",
-      studentClass: result.studentId?.profile?.education?.class,
-      subject: result.subject,
-      summary: {
-        totalQuestions: result.totalQuestions,
-        correctAnswers: result.correctAnswers,
-        incorrectAnswers: result.incorrectAnswers,
-        scoreGained: result.scoreGained,
-        totalMarks: result.totalMarks,
-        accuracy: displayAccuracy, // Fix: Ab ye "100.00%" dikhayega
-        status: parseFloat(displayAccuracy) >= 40 ? "Pass" : "Fail",
-        date: result.submittedAt
-      },
-      detailedAnalysis: report 
+      data: {
+        header: {
+          studentName: result.studentId?.profile?.personalDetails?.fullName || "Aryan",
+          message: accValue >= 70 ? "Well Done!" : "Keep Practicing!"
+        },
+        topCards: {
+          score: {
+            obtained: result.scoreGained,
+            total: result.totalMarks,
+            display: `${result.scoreGained}/${result.totalMarks}`
+          },
+          accuracy: {
+            value: accValue,
+            display: accDisplay
+          }
+        },
+        performanceOverview: {
+            correct: result.correctAnswers,
+            wrong: result.incorrectAnswers,
+            totalQuestions: result.totalQuestions
+        },
+        viewExplanation: detailedAnalysis 
+      }
     });
 
   } catch (error) {
