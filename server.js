@@ -16,14 +16,15 @@ const teacherRoutes = require("./routes/teacher.routes");
 const spinRoutes = require("./routes/spin.routes");
 const studentMocktestRoutes = require("./routes/student.mocktest.routes");
 const parentRoutes = require("./routes/parent.routes");
-<<<<<<< HEAD
-const interviewRoutes = require("./routes/interview.routes")
+const doubtRoutes = require("./routes/doubtRoutes");
+
+
 const rewardRoutes = require("./routes/rewardRoutes");
-=======
+
 const interviewRoutes = require("./routes/interview.routes");
 
 const testRoutes = require("./routes/test.routes")
->>>>>>> 8745af1 (api)
+
 
 const app = express();
 const server = http.createServer(app);
@@ -63,6 +64,7 @@ app.use("/api/student-mocktest", studentMocktestRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/interview",interviewRoutes );
 app.use("/api/rewards", rewardRoutes);
+app.use("/api/doubts", doubtRoutes);
 
 app.use("/api/test", testRoutes)
 // global error handler (optional)
