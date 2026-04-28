@@ -22,7 +22,7 @@ const doubtRoutes = require("./routes/doubtRoutes");
 const rewardRoutes = require("./routes/rewardRoutes");
 
 const interviewRoutes = require("./routes/interview.routes");
-
+const rewardsRoutes = require("./routes/rewardRoutes")
 const testRoutes = require("./routes/test.routes")
 
 
@@ -65,6 +65,7 @@ app.use("/api/parent", parentRoutes);
 app.use("/api/interview",interviewRoutes );
 app.use("/api/rewards", rewardRoutes);
 app.use("/api/doubts", doubtRoutes);
+
 
 app.use("/api/test", testRoutes)
 // global error handler (optional)
