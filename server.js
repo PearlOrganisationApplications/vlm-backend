@@ -17,11 +17,15 @@ const teacherRoutes = require("./routes/teacher.routes");
 const spinRoutes = require("./routes/spin.routes");
 const studentMocktestRoutes = require("./routes/student.mocktest.routes");
 const parentRoutes = require("./routes/parent.routes");
-const interviewRoutes = require("./routes/interview.routes")
+const doubtRoutes = require("./routes/doubtRoutes");
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
-// const interviewRoutes = require("./routes/interview.routes");
+
+const rewardRoutes = require("./routes/rewardRoutes");
+
+const interviewRoutes = require("./routes/interview.routes");
 const rewardsRoutes = require("./routes/rewardRoutes")
 const testRoutes = require("./routes/test.routes")
+
 
 const app = express();
 const server = http.createServer(app);
@@ -63,6 +67,8 @@ app.use("/api/interview",interviewRoutes );
 app.use("/api/reels", require("./routes/reel.routes"));
 
 app.use("/api/rewards", rewardsRoutes);
+app.use("/api/doubts", doubtRoutes);
+
 
 app.use("/api/test", testRoutes)
 // global error handler (optional)
