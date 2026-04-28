@@ -11,19 +11,21 @@ const connectDB = require("./config/db");
 const adminRoutes = require("./routes/admin.routes");
 const permissionRoutes = require("./routes/permission.routes");
 const paymentRoutes = require("./routes/payment.routes");
-const studentRoutes = require("./routes/student.routes"); 
+const studentRoutes = require("./routes/student.routes");
 const teacherRoutes = require("./routes/teacher.routes");
 const spinRoutes = require("./routes/spin.routes");
 const studentMocktestRoutes = require("./routes/student.mocktest.routes");
 const parentRoutes = require("./routes/parent.routes");
-const interviewRoutes = require("./routes/interview.routes")
+const interviewRoutes = require("./routes/interview.routes");
+const walletRoutes = require("./routes/wallet.routes");
+const errorHandler = require("./middlewares/errorHandler.middleware");
 
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", 
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"]
   }
 });
@@ -35,11 +37,22 @@ connectDB();
 
 // middlewares
 app.use(cors());
-app.use(express.json());
+
+// Global JSON parser with raw body capture for webhook signature verification
+app.use(express.json({
+  verify: (req, res, buf) => {
+    // Capture raw body for any route containing /webhook
+    if (req.originalUrl && req.originalUrl.toLowerCase().includes('webhook')) {
+      req.rawBody = buf.toString('utf8');
+      console.log(`[Parser] Raw body captured for ${req.originalUrl} (${buf.length} bytes)`);
+    }
+  }
+}));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
-
+app.use("/api/wallet", walletRoutes);
 // routes
 app.get("/", (req, res) => {
   res.send("API is running...");
@@ -50,21 +63,16 @@ app.use("/api/permissions", permissionRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/students", studentRoutes); // Add this line to include student routes
 app.use("/api/teachers", teacherRoutes); // Add this line to include teacher routes
-app.use("/api/spin",spinRoutes );
+app.use("/api/spin", spinRoutes);
 app.use("/api/admin/content", require("./routes/admin.content.routes"));
 app.use("/api/student-mocktest", studentMocktestRoutes);
 app.use("/api/parent", parentRoutes);
-app.use("/api/interview",interviewRoutes );
-// global error handler (optional)
-app.use((err, req, res, next) => {
-  res.status(500).json({
-    message: err.message || "Internal Server Error",
-  });
-});
-
+app.use("/api/interview", interviewRoutes);
 
 app.use("/api/chat", require("./routes/chatRoutes"));
 
+// global error handler
+app.use(errorHandler);
 
 socketConfig(io);
 

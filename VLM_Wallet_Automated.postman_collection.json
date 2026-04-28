@@ -1,0 +1,658 @@
+{
+	"info": {
+		"name": "VLM Wallet - Fully Automated",
+		"description": "Fully automated wallet testing collection.\n\n**HOW TO USE:**\n1. Set `base_url`, `student_phone`, and `student_password` in Collection Variables.\n2. Run \"1. Student Login\" first — token is auto-saved.\n3. All other requests use the token automatically.\n4. For webhook testing, set `razorpay_webhook_secret` variable.\n\nNo manual token copying needed!",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:5000", "type": "string" },
+		{ "key": "student_phone", "value": "9999999999", "type": "string" },
+		{ "key": "student_password", "value": "123456", "type": "string" },
+		{ "key": "admin_email", "value": "admin@vlm.com", "type": "string" },
+		{ "key": "admin_password", "value": "admin123", "type": "string" },
+		{ "key": "auth_token", "value": "", "type": "string" },
+		{ "key": "admin_token", "value": "", "type": "string" },
+		{ "key": "user_id", "value": "", "type": "string" },
+		{ "key": "razorpay_order_id", "value": "", "type": "string" },
+		{ "key": "razorpay_webhook_secret", "value": "your_webhook_secret_here", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "🔐 Auth",
+			"item": [
+				{
+					"name": "1. Student Login (auto-saves token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success && res.token) {",
+									"    pm.collectionVariables.set('auth_token', res.token);",
+									"    console.log('✅ Token saved automatically');",
+									"}",
+									"if (res.data && res.data.userId) {",
+									"    pm.collectionVariables.set('user_id', res.data.userId);",
+									"    console.log('✅ userId saved:', res.data.userId);",
+									"}",
+									"pm.test('Login successful', () => {",
+									"    pm.expect(res.success).to.be.true;",
+									"    pm.expect(res.token).to.be.a('string');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"{{student_phone}}\",\n    \"password\": \"{{student_password}}\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/students/login", "host": ["{{base_url}}"], "path": ["api", "students", "login"] }
+					}
+				},
+				{
+					"name": "2. Admin Login (auto-saves token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.token) {",
+									"    pm.collectionVariables.set('admin_token', res.token);",
+									"    console.log('✅ Admin token saved');",
+									"}",
+									"pm.test('Admin login successful', () => {",
+									"    pm.expect(res.token).to.be.a('string');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{admin_email}}\",\n    \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/admins/login", "host": ["{{base_url}}"], "path": ["api", "admins", "login"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "💰 Wallet - Top Up Flow",
+			"item": [
+				{
+					"name": "3. Create Wallet Top-Up Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success && res.data && res.data.orderId) {",
+									"    pm.collectionVariables.set('razorpay_order_id', res.data.orderId);",
+									"    console.log('✅ Razorpay Order ID saved:', res.data.orderId);",
+									"}",
+									"pm.test('Order created successfully', () => {",
+									"    pm.expect(res.success).to.be.true;",
+									"    pm.expect(res.data.orderId).to.be.a('string');",
+									"    pm.expect(res.data.currency).to.eql('INR');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{auth_token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 500\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/wallet/create-order", "host": ["{{base_url}}"], "path": ["api", "wallet", "create-order"] }
+					}
+				},
+				{
+					"name": "4. Simulate Razorpay Webhook (payment.captured)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Build the webhook payload",
+									"const userId = pm.collectionVariables.get('user_id');",
+									"const orderId = pm.collectionVariables.get('razorpay_order_id');",
+									"const secret = pm.collectionVariables.get('razorpay_webhook_secret');",
+									"const paymentId = 'pay_test_' + Date.now();",
+									"",
+									"const payload = {",
+									"    event: 'payment.captured',",
+									"    payload: {",
+									"        payment: {",
+									"            entity: {",
+									"                id: paymentId,",
+									"                amount: 50000,",
+									"                currency: 'INR',",
+									"                order_id: orderId,",
+									"                method: 'upi',",
+									"                status: 'captured',",
+									"                notes: { userId: userId }",
+									"            }",
+									"        }",
+									"    }",
+									"};",
+									"",
+									"const rawBody = JSON.stringify(payload);",
+									"",
+									"// Generate HMAC-SHA256 signature",
+									"const signature = CryptoJS.HmacSHA256(rawBody, secret).toString(CryptoJS.enc.Hex);",
+									"",
+									"pm.collectionVariables.set('_webhook_body', rawBody);",
+									"pm.collectionVariables.set('_webhook_signature', signature);",
+									"",
+									"console.log('✅ Webhook signature generated');",
+									"console.log('PaymentId:', paymentId);",
+									"console.log('UserId:', userId);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Webhook processed successfully', () => {",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"    const res = pm.response.json();",
+									"    pm.expect(res.success).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-razorpay-signature", "value": "{{_webhook_signature}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{_webhook_body}}"
+						},
+						"url": { "raw": "{{base_url}}/api/wallet/webhook", "host": ["{{base_url}}"], "path": ["api", "wallet", "webhook"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "📊 Wallet - Read Operations",
+			"item": [
+				{
+					"name": "5. Get Wallet Balance",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.test('Balance retrieved', () => {",
+									"    pm.expect(res.success).to.be.true;",
+									"    pm.expect(res.data.balance).to.be.a('number');",
+									"});",
+									"console.log('💰 Current Balance: ₹' + res.data.balance);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/wallet/balance", "host": ["{{base_url}}"], "path": ["api", "wallet", "balance"] }
+					}
+				},
+				{
+					"name": "6. Get Transactions (Page 1)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.test('Transactions retrieved', () => {",
+									"    pm.expect(res.success).to.be.true;",
+									"    pm.expect(res.data.transactions).to.be.an('array');",
+									"    pm.expect(res.data.currentPage).to.eql(1);",
+									"});",
+									"console.log('📄 Total Pages:', res.data.totalPages);",
+									"console.log('📝 Transactions on page:', res.data.transactions.length);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": {
+							"raw": "{{base_url}}/api/wallet/transactions?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "wallet", "transactions"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" }
+							]
+						}
+					}
+				},
+				{
+					"name": "7. Get Transactions (Page 2)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.test('Page 2 retrieved', () => {",
+									"    pm.expect(res.success).to.be.true;",
+									"    pm.expect(res.data.currentPage).to.eql(2);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": {
+							"raw": "{{base_url}}/api/wallet/transactions?page=2&limit=5",
+							"host": ["{{base_url}}"],
+							"path": ["api", "wallet", "transactions"],
+							"query": [
+								{ "key": "page", "value": "2" },
+								{ "key": "limit", "value": "5" }
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🛡️ Validation & Edge Cases",
+			"item": [
+				{
+					"name": "8. Create Order - Missing Amount (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Validation error returned', () => {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"    const res = pm.response.json();",
+									"    pm.expect(res.success).to.be.false;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{auth_token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": { "raw": "{{base_url}}/api/wallet/create-order", "host": ["{{base_url}}"], "path": ["api", "wallet", "create-order"] }
+					}
+				},
+				{
+					"name": "9. Create Order - Negative Amount (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Negative amount rejected', () => {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{auth_token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\n    \"amount\": -100\n}" },
+						"url": { "raw": "{{base_url}}/api/wallet/create-order", "host": ["{{base_url}}"], "path": ["api", "wallet", "create-order"] }
+					}
+				},
+				{
+					"name": "10. Create Order - Zero Amount (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Zero amount rejected', () => {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{auth_token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\n    \"amount\": 0\n}" },
+						"url": { "raw": "{{base_url}}/api/wallet/create-order", "host": ["{{base_url}}"], "path": ["api", "wallet", "create-order"] }
+					}
+				},
+				{
+					"name": "11. No Auth Token (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Unauthorized without token', () => {",
+									"    pm.expect(pm.response.code).to.eql(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{base_url}}/api/wallet/balance", "host": ["{{base_url}}"], "path": ["api", "wallet", "balance"] }
+					}
+				},
+				{
+					"name": "12. Invalid Auth Token (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid token rejected', () => {",
+									"    pm.expect(pm.response.code).to.eql(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer invalid.jwt.token.here" }],
+						"url": { "raw": "{{base_url}}/api/wallet/balance", "host": ["{{base_url}}"], "path": ["api", "wallet", "balance"] }
+					}
+				},
+				{
+					"name": "13. Webhook - Invalid Signature (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid signature rejected', () => {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"    const res = pm.response.json();",
+									"    pm.expect(res.success).to.be.false;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-razorpay-signature", "value": "invalid_signature_value" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event\": \"payment.captured\",\n    \"payload\": {\n        \"payment\": {\n            \"entity\": {\n                \"id\": \"pay_fake_123\",\n                \"amount\": 10000,\n                \"notes\": { \"userId\": \"fakeUserId\" }\n            }\n        }\n    }\n}"
+						},
+						"url": { "raw": "{{base_url}}/api/wallet/webhook", "host": ["{{base_url}}"], "path": ["api", "wallet", "webhook"] }
+					}
+				},
+				{
+					"name": "14. Transactions - Invalid Page Param",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid page rejected', () => {",
+									"    pm.expect(pm.response.code).to.eql(400);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": {
+							"raw": "{{base_url}}/api/wallet/transactions?page=-1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "wallet", "transactions"],
+							"query": [
+								{ "key": "page", "value": "-1" },
+								{ "key": "limit", "value": "10" }
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔄 Full E2E Flow (Run in Sequence)",
+			"item": [
+				{
+					"name": "E2E-1: Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.token) pm.collectionVariables.set('auth_token', res.token);",
+									"if (res.data && res.data.userId) pm.collectionVariables.set('user_id', res.data.userId);",
+									"pm.test('Login OK', () => pm.expect(res.success).to.be.true);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"phone\": \"{{student_phone}}\",\n    \"password\": \"{{student_password}}\"\n}" },
+						"url": { "raw": "{{base_url}}/api/students/login", "host": ["{{base_url}}"], "path": ["api", "students", "login"] }
+					}
+				},
+				{
+					"name": "E2E-2: Check Initial Balance",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.collectionVariables.set('_initial_balance', res.data.balance);",
+									"pm.test('Balance fetched', () => pm.expect(res.success).to.be.true);",
+									"console.log('Initial Balance: ₹' + res.data.balance);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/wallet/balance", "host": ["{{base_url}}"], "path": ["api", "wallet", "balance"] }
+					}
+				},
+				{
+					"name": "E2E-3: Create ₹500 Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.data) pm.collectionVariables.set('razorpay_order_id', res.data.orderId);",
+									"pm.test('Order created', () => pm.expect(res.success).to.be.true);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{auth_token}}" }
+						],
+						"body": { "mode": "raw", "raw": "{\n    \"amount\": 500\n}" },
+						"url": { "raw": "{{base_url}}/api/wallet/create-order", "host": ["{{base_url}}"], "path": ["api", "wallet", "create-order"] }
+					}
+				},
+				{
+					"name": "E2E-4: Simulate Webhook",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const userId = pm.collectionVariables.get('user_id');",
+									"const orderId = pm.collectionVariables.get('razorpay_order_id');",
+									"const secret = pm.collectionVariables.get('razorpay_webhook_secret');",
+									"const payload = JSON.stringify({",
+									"    event: 'payment.captured',",
+									"    payload: { payment: { entity: {",
+									"        id: 'pay_e2e_' + Date.now(),",
+									"        amount: 50000, currency: 'INR',",
+									"        order_id: orderId, status: 'captured',",
+									"        notes: { userId: userId }",
+									"    }}}",
+									"});",
+									"pm.collectionVariables.set('_webhook_body', payload);",
+									"pm.collectionVariables.set('_webhook_signature',",
+									"    CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Webhook OK', () => pm.expect(pm.response.code).to.eql(200));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "x-razorpay-signature", "value": "{{_webhook_signature}}" }
+						],
+						"body": { "mode": "raw", "raw": "{{_webhook_body}}" },
+						"url": { "raw": "{{base_url}}/api/wallet/webhook", "host": ["{{base_url}}"], "path": ["api", "wallet", "webhook"] }
+					}
+				},
+				{
+					"name": "E2E-5: Verify Balance Increased",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"const initial = parseFloat(pm.collectionVariables.get('_initial_balance') || 0);",
+									"pm.test('Balance increased by ₹500', () => {",
+									"    pm.expect(res.data.balance).to.eql(initial + 500);",
+									"});",
+									"console.log('Before: ₹' + initial + ' → After: ₹' + res.data.balance);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": { "raw": "{{base_url}}/api/wallet/balance", "host": ["{{base_url}}"], "path": ["api", "wallet", "balance"] }
+					}
+				},
+				{
+					"name": "E2E-6: Verify Transaction Logged",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"pm.test('TOP_UP transaction exists', () => {",
+									"    const topUp = res.data.transactions.find(t => t.type === 'TOP_UP');",
+									"    pm.expect(topUp).to.not.be.undefined;",
+									"    pm.expect(topUp.amount).to.eql(500);",
+									"    pm.expect(topUp.status).to.eql('SUCCESS');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+						"url": {
+							"raw": "{{base_url}}/api/wallet/transactions?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "wallet", "transactions"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" }
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}
