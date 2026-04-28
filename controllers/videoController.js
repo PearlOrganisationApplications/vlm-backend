@@ -3,13 +3,13 @@ const Video = require("../models/Video");
 // Upload new video
 exports.uploadVideo = async (req, res) => {
   try {
-    const { title, class: className, subject, topic, videoUrl, duration, uploadedBy } = req.body;
+    const { userId, title, class: className, subject, topic, videoUrl, duration, uploadedBy } = req.body;
 
     if (duration > 90) {
       return res.status(400).json({ message: "Max video duration is 90 seconds" });
     }
 
-    const video = new Video({ title, class: className, subject, topic, videoUrl, duration, uploadedBy });
+    const video = new Video({ userId, title, class: className, subject, topic, videoUrl, duration, uploadedBy });
     await video.save();
 
     res.status(201).json({ message: "Video uploaded successfully!", video });
@@ -17,6 +17,17 @@ exports.uploadVideo = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Get all videos with user details
+exports.getVideos = async (req, res) => {
+  try {
+    const videos = await Video.find().populate("userId", "name email role"); 
+    res.json(videos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 // Admin approve/reject video
 exports.updateVideoStatus = async (req, res) => {
@@ -38,12 +49,4 @@ exports.updateVideoStatus = async (req, res) => {
   }
 };
 
-// Get all videos with status
-exports.getVideos = async (req, res) => {
-  try {
-    const videos = await Video.find();
-    res.json(videos);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+

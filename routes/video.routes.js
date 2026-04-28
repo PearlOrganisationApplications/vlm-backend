@@ -6,7 +6,7 @@ const videoController = require("../controllers/videoController");
 router.post("/", videoController.uploadVideo);
 
 // Admin approve/reject
-router.post("/:id/status", videoController.updateVideoStatus);
+// router.post("/:id/status", videoController.updateVideoStatus);
 
 // Get all videos
 router.get("/", videoController.getVideos);
