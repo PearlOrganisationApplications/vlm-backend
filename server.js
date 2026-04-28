@@ -1,4 +1,5 @@
 require("dotenv").config();
+const dns = require("node:dns/promises");
 const http = require("http");
 const { Server } = require("socket.io");
 const express = require("express");
@@ -17,7 +18,7 @@ const spinRoutes = require("./routes/spin.routes");
 const studentMocktestRoutes = require("./routes/student.mocktest.routes");
 const parentRoutes = require("./routes/parent.routes");
 const interviewRoutes = require("./routes/interview.routes")
-
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const app = express();
 const server = http.createServer(app);
 
@@ -55,6 +56,8 @@ app.use("/api/admin/content", require("./routes/admin.content.routes"));
 app.use("/api/student-mocktest", studentMocktestRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/interview",interviewRoutes );
+app.use("/api/reels", require("./routes/reel.routes"));
+
 // global error handler (optional)
 app.use((err, req, res, next) => {
   res.status(500).json({
