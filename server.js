@@ -17,6 +17,7 @@ const spinRoutes = require("./routes/spin.routes");
 const studentMocktestRoutes = require("./routes/student.mocktest.routes");
 const parentRoutes = require("./routes/parent.routes");
 const interviewRoutes = require("./routes/interview.routes")
+const rewardRoutes = require("./routes/rewardRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +56,8 @@ app.use("/api/admin/content", require("./routes/admin.content.routes"));
 app.use("/api/student-mocktest", studentMocktestRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/interview",interviewRoutes );
+app.use("/api/rewards", rewardRoutes);
+
 // global error handler (optional)
 app.use((err, req, res, next) => {
   res.status(500).json({
