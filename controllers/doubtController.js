@@ -114,3 +114,55 @@ exports.getSingleDoubt = async (req, res) => {
     });
   }
 };
+
+exports.switchToAI = async (req, res) => {
+    try {
+        const { doubtId, studentId } = req.body;
+
+        const updatedDoubt = await Doubt.findOneAndUpdate(
+            { _id: doubtId, studentId: studentId },
+            { tutorType: "AI", status: "RESOLVED" },
+            { new: true }
+        );
+
+        if (!updatedDoubt) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Doubt not found with this ID and Student." 
+            });
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Switched to AI Tutor", 
+            data: updatedDoubt 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// 3. Mark as Priority (Screen: Mark as Priority)
+exports.markAsPriority = async (req, res) => {
+    try {
+        const { doubtId, studentId } = req.body;
+
+        const updatedDoubt = await Doubt.findOneAndUpdate(
+            { _id: doubtId, studentId: studentId },
+            { isPriority: true, status: "PRIORITY" },
+            { new: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Marked as Priority Request",
+            details: {
+                subject: updatedDoubt.subject,
+                topic: updatedDoubt.topic,
+                estimatedTime: "Within 1 Hour"
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

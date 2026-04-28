@@ -50,6 +50,9 @@ const doubtSchema = new mongoose.Schema(
       enum: ["PENDING", "IN_PROGRESS", "RESOLVED", "CANCELLED"],
       default: "PENDING",
     },
+
+     isPriority: { type: Boolean, default: false },
+    tutorType: { type: String, enum: ["HUMAN", "AI"], default: "HUMAN" }
   },
   {
     timestamps: true,
