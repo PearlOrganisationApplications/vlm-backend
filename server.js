@@ -1,4 +1,5 @@
 require("dotenv").config();
+const dns = require("node:dns/promises");
 const http = require("http");
 const { Server } = require("socket.io");
 const express = require("express");
@@ -18,7 +19,12 @@ const studentMocktestRoutes = require("./routes/student.mocktest.routes");
 const parentRoutes = require("./routes/parent.routes");
 const interviewRoutes = require("./routes/interview.routes");
 const walletRoutes = require("./routes/wallet.routes");
+const doubtRoutes = require("./routes/doubtRoutes");
+const rewardsRoutes = require("./routes/rewardRoutes");
+const testRoutes = require("./routes/test.routes");
 const errorHandler = require("./middlewares/errorHandler.middleware");
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 const app = express();
 const server = http.createServer(app);
@@ -68,6 +74,11 @@ app.use("/api/admin/content", require("./routes/admin.content.routes"));
 app.use("/api/student-mocktest", studentMocktestRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/interview", interviewRoutes);
+app.use("/api/reels", require("./routes/reel.routes"));
+app.use("/api/videos", require("./routes/video.routes"));
+app.use("/api/rewards", rewardsRoutes);
+app.use("/api/doubts", doubtRoutes);
+app.use("/api/test", testRoutes);
 
 app.use("/api/chat", require("./routes/chatRoutes"));
 
