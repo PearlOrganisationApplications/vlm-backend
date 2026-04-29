@@ -29,7 +29,7 @@ router.get("/", authMiddleware, studentController.getAllStudents);
 router.patch("/deactivate/:id",authMiddleware, studentController.deactivateStudent );
 
 // Get student by USER ID (🔥 IMPORTANT)
-router.get("/user/:userId", authMiddleware, studentController.getStudentByUserId);
+router.get("/user/:id", studentController.getStudentByStudentId);
 
 // Get student by STUDENT ID
 

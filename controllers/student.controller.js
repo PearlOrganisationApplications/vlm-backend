@@ -1,7 +1,7 @@
 const User = require("../models/User");
 const Student = require("../models/Student");
 const jwt = require("jsonwebtoken");
-
+const mongoose = require("mongoose")
 
 exports.registerStudent = async (req, res) => {
    console.log("Incoming Body:", req.body);
@@ -123,7 +123,6 @@ exports.loginStudent = async (req, res) => {
       return res.status(404).json({ success: false, message: "Student profile data not found" });
     }
 
-
     
   //   if (studentData.isActive === false) {
   //   return res.status(403).json({ 
@@ -160,40 +159,53 @@ data : studentData
 
 // controllers/student.controller.js
 
-
-exports.getStudentByUserId = async (req, res) => {
+exports.getStudentByStudentId = async (req, res) => {
   try {
-    const { userId } = req.params;
+    // 1. URL se Student ki apni _id lena (e.g. /api/student/65abc...)
+    const { id } = req.params;
 
-    const student = await Student.findOne({ userId }).populate("userId");
-
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
+    // Validation: Check karo ki ID valid MongoDB ID hai ya nahi
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Student ID format" });
     }
 
-    // 🔥 TRIAL STATUS LOGIC
-    const now = new Date();
+    // 2. Student table mein uski apni _id se find karna
+    const student = await Student.findById(id).populate("userId");
 
+    // 3. Agar student nahi milta
+    if (!student) {
+      return res.status(404).json({ message: "Student record not found with this ID" });
+    }
+
+    // 4. 🔥 TRIAL STATUS LOGIC
+    const now = new Date();
     let trialStatus = "inactive";
 
-    if (student.planDetails.trial.isActive) {
-      if (student.planDetails.trial.expiresAt > now) {
-        trialStatus = "active";
-      } else {
-        trialStatus = "expired";
+    // Aapke model ke nested structure ke hisab se check:
+    if (student.planDetails && student.planDetails.trial) {
+      const { isActive, expiresAt } = student.planDetails.trial;
+
+      if (isActive) {
+        if (expiresAt && new Date(expiresAt) > now) {
+          trialStatus = "active";
+        } else {
+          trialStatus = "expired";
+        }
       }
     }
 
-    res.json({
-      student,
+    // 5. Response bhejna (Pura Student object + Trial status)
+    res.status(200).json({
+      success: true,
+      student, // Isme profile, wallet, education sab include hai
       trial: {
         status: trialStatus,
-        expiresAt: student.planDetails.trial.expiresAt
+        expiresAt: student.planDetails?.trial?.expiresAt || null
       }
     });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
