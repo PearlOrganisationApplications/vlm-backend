@@ -9,6 +9,5 @@ router.post("/verify-otp", verifyOtp);
 
 router.post("/get-student-data", getStudentByIdentifier);
 
-router.get("/performance-analytics", getPerformanceAnalytics)
 
 module.exports = router ;

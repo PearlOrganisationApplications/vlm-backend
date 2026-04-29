@@ -2,7 +2,7 @@ const User = require("../models/User");
 const Parent = require("../models/Parent");
 const Student = require("../models/Student");
 const jwt = require("jsonwebtoken");
-const TestResult = require("../models/TestResult")
+const TestResult = require("../models/TestResult");
 
 exports.sendOtp = async (req, res) => {
   try {
@@ -151,76 +151,3 @@ exports.getStudentByIdentifier = async (req, res) => {
   }
 };
 
-exports.getPerformanceAnalytics = async (req, res) => {
-  try {
-    const studentId =req.body; // Login user ki ID
-
-    // 1. Overall Progress Trend (Last 4 Weeks)
-    const fourWeeksAgo = new Date();
-    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-
-    const trendData = await TestResult.aggregate([
-      { $match: { studentId, submittedAt: { $gte: fourWeeksAgo } } },
-      {
-        $group: {
-          _id: { $week: "$submittedAt" },
-          avgScore: { $avg: { $multiply: [{ $divide: ["$scoreGained", "$totalMarks"] }, 100] } },
-          date: { $first: "$submittedAt" }
-        }
-      },
-      { $sort: { "_id": 1 } }
-    ]);
-
-    // 2. Subject-Wise Performance (Your Score vs Class Average)
-    const subjectWise = await TestResult.aggregate([
-      {
-        $facet: {
-          yourScores: [
-            { $match: { studentId } },
-            { $group: { _id: "$subject", yourAvg: { $avg: "$accuracy" } } }
-          ],
-          classAverage: [
-            { $group: { _id: "$subject", classAvg: { $avg: "$accuracy" } } }
-          ]
-        }
-      }
-    ]);
-
-    // 3. Weak Topics (Identifying subjects with accuracy < 50%)
-    const weakTopics = await TestResult.find({ studentId, accuracy: { $lt: 50 } })
-      .limit(5)
-      .select("subject");
-
-    // 4. Overall MCQ Accuracy
-    const totalStats = await TestResult.aggregate([
-      { $match: { studentId } },
-      { $group: { _id: null, avgAccuracy: { $avg: "$accuracy" } } }
-    ]);
-
-    // Final Response Formatting
-    res.status(200).json({
-      status: "success",
-      data: {
-        overall_trend: trendData.map((item, index) => ({
-          week: `W${index + 1}`,
-          score: Math.round(item.avgScore)
-        })),
-        subject_performance: subjectWise[0].yourScores.map(subject => {
-          const classAvg = subjectWise[0].classAverage.find(c => c._id === subject._id);
-          return {
-            subject: subject._id,
-            your_score: Math.round(subject.yourAvg),
-            class_avg: classAvg ? Math.round(classAvg.classAvg) : 0
-          };
-        }),
-        mcq_accuracy: totalStats.length > 0 ? Math.round(totalStats[0].avgAccuracy) : 0,
-        weak_topics: [...new Set(weakTopics.map(t => t.subject))], // Unique subjects
-        study_hours_this_week: 28.5, // Note: Yeh data StudySession model se aayega
-        report_url: "https://api.vlm.com/generate-pdf/" + studentId
-      }
-    });
-
-  } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
-  }
-};
