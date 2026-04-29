@@ -123,6 +123,15 @@ exports.loginStudent = async (req, res) => {
       return res.status(404).json({ success: false, message: "Student profile data not found" });
     }
 
+
+    
+  //   if (studentData.isActive === false) {
+  //   return res.status(403).json({ 
+  //     success: false, 
+  //     message: "Your account has been deactivated " 
+  //   });
+  // }
+
  if (!studentData.vlmId) {
     const randomNumber = Math.floor(1000 + Math.random() * 9000); // 6 digits ka random number
     const generatedId = `VLM-STU-${randomNumber}`;

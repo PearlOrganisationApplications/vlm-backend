@@ -22,6 +22,8 @@ router.post("/create-slots", authMiddleware, controller.createSlots)
 
 router.post("/init", authMiddleware,adminCheck, controller.initLogic);
 
+
+// router.patch("/activate-student")
 // GET ALL
 router.get(
   "/",

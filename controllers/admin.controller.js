@@ -231,3 +231,36 @@ exports.createSlots = async (req, res) => {
     });
   }
 };
+
+exports.activateStudent = async (req, res) => {
+  try {
+    const { id } = req.params; // Student ID params se lenge
+
+    // Student find karke isActive ko true kar denge
+    const student = await Student.findByIdAndUpdate(
+      id,
+      { isActive: true },
+      { new: true } // New: true se updated data return hota hai
+    );
+
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Student record nahi mila" 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Student account successfully activate ho gaya hai.",
+      data: student
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
