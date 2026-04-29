@@ -284,3 +284,27 @@ exports.deleteStudent = async (req, res) => {
 
 
 
+exports.deactivateStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Security check: Find the student profile
+    const student = await Student.findById(id);
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Security check: Ensure the logged-in user owns this student profile
+    if (student.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "You can only deactivate your own account" });
+    }
+
+    student.isActive = false;
+    await student.save();
+
+    res.status(200).json({ success: true, message: "Account deactivated successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

@@ -64,7 +64,13 @@ const studentSchema = new mongoose.Schema({
     totalCoins: { type: Number, default: 0 },
     totalBalance: { type: Number, default: 0 } // Rupees yahan save honge
   },
-  lastSpinTime: { type: Date, default: null } 
+  lastSpinTime: { type: Date, default: null } ,
+
+   isActive: {
+    type: Boolean,
+    default: true
+  }
+
 
 }, { timestamps: true });
 

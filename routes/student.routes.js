@@ -25,6 +25,9 @@ router.post("/login", studentController.loginStudent);
 // Get ALL students
 router.get("/", authMiddleware, studentController.getAllStudents);
 
+
+router.patch("/deactivate/:id",authMiddleware, studentController.deactivateStudent );
+
 // Get student by USER ID (🔥 IMPORTANT)
 router.get("/user/:userId", authMiddleware, studentController.getStudentByUserId);
 
