@@ -1,5 +1,5 @@
 const express = require("express");
-const { sendOtp, verifyOtp, linkAndFetchStudent, getStudentByIdentifier } = require("../controllers/parent.controller");
+const { sendOtp, verifyOtp, linkAndFetchStudent, getStudentByIdentifier, getPerformanceAnalytics } = require("../controllers/parent.controller");
 
 const router = express.Router();
 
@@ -8,5 +8,7 @@ router.post("/login/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
 
 router.post("/get-student-data", getStudentByIdentifier);
+
+router.get("/performance-analytics", getPerformanceAnalytics)
 
 module.exports = router ;
